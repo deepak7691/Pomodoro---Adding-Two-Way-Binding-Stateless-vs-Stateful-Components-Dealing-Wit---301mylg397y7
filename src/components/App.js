@@ -1,100 +1,95 @@
-import React, {Component, useEffect, useState} from "react";
-import '../styles/App.css';
+import React, {useState, useEffect} from 'react';
 
-let retInterval;
-let retInterval2;
+function Clock() {
+  const [workDuration, setWorkDuration] = useState(25);
+  const [breakDuration, setBreakDuration] = useState(5);
+  const [flag , setFlag] =  useState(false);
+  const [worksecond, setWorkSecond] = useState(1500);
+  const [breaksecond, setBreakSecond] = useState(300);
+  const [type, setType] = useState('work');
+  const [resetFlag, setResetFalg] = useState(true);
 
-const App = () => {
+  useEffect(() =>{
+    if(flag && type === 'work'){
+      if(worksecond > 0) {
+        const timer = setTimeout(() => setWorkSecond(worksecond - 1), 1000);
+        return () => clearTimeout(timer);
+      }
+      if(worksecond === 0) {
+        alert('work duration is over')
+        setType('break');
+        setWorkSecond(workDuration * 60);
+      }
+    }
+    if(flag && type === 'break'){
+      if(breaksecond > 0) {
+        const timer = setTimeout(() => setBreakSecond(breaksecond - 1), 1000);
+        return () => clearTimeout(timer);
+      }
+      if(breaksecond === 0) {
+        alert('break duration is over');
+        setType('work');
+        setBreakSecond(breakDuration * 60);
+      }
+    }
+  },[flag, type, worksecond, breaksecond, workDuration, breakDuration]);
 
-  //holds total work and break
-  const [worktime, setWorktime] = useState(25*60);
-  const [breaktime, setBreaktime] = useState(5*60);
+  const reset = () =>{
+      setResetFalg(true);
+      setFlag(false);
+      setType('work');
+      setWorkDuration(25);
+      setBreakDuration(5);
+      setBreakSecond(300);
+      setWorkSecond(1500);
+  }
 
-  //holds temporary data from input
-  const [tempWorkTime, setTempWorkTime] = useState(25);
-  const [tempBreakTime, setTempBreakTime] = useState(5);
-
-  //holds running work and break time
-  const [currentWorkTime, setCurrentWorkTime] = useState(worktime);
-  const [currentBreakTime, setCurrentBreakTime] = useState(breaktime);
-
-  const updateTime = (e) => {
-    if(tempWorkTime === 0 && tempBreakTime === 0) {
+  const convertToStandardFormat = (sec) =>{
+    let m = parseInt(sec / 60).toString();
+    let s = parseInt(sec % 60).toString();
+    if(m.length === 1) m = '0' + m;
+    if(s.length === 1) s = '0' + s;
+    return m + ":" + s;
+  }
+  const validateData = (data) =>{
+    if(!isNaN(data) && parseInt(data) >= 0){
+      return parseInt(data);
+    }
+    else
+      return '';
+  }
+  const setDuration = (e) =>{
+    e.preventDefault();
+    if(breakDuration + workDuration <= 0){
       reset();
+      return ;
     }
-    else {
-      setWorktime(tempWorkTime*60);
-      setBreaktime(tempBreakTime*60);
-      setCurrentWorkTime(tempWorkTime*60);
-      setCurrentBreakTime(tempBreakTime*60);
-    }
+    setResetFalg(false);
+    setType('work');
+    setWorkSecond(workDuration * 60);
+    setBreakSecond(breakDuration * 60);
   }
-
-  const start = () => {
-    clearInterval(retInterval2);
-    retInterval = setInterval(() => {
-      //console.log('interval running')
-      setCurrentWorkTime(currentWorkTime => currentWorkTime - 1)
-    }, 1000)
-  }
-
-  const stop = () => {
-    clearInterval(retInterval);
-    retInterval2 = setInterval(() => {
-      setCurrentBreakTime(currentBreakTime => currentBreakTime - 1)
-    }, 1000)
-  }
-
-  const reset = () => {
-    clearInterval(retInterval);
-    clearInterval(retInterval2);
-    setWorktime(25*60);
-    setBreaktime(5*60);
-    setCurrentWorkTime(25*60);
-    setCurrentBreakTime(5*60);
-    setTempWorkTime(25*60);
-    setTempBreakTime(5*60);
-  }
-
-  const tempupdateWork = (e) => {
-    setTempWorkTime(e.target.value);
-  }
-
-  const tempupdateBreak = (e) => {
-    setTempBreakTime(e.target.value);
-  }
-
-  useEffect(() => {
-    console.log('TempWorkTime, TempBreak Time - ', tempWorkTime, tempBreakTime);
-    console.log('Total WorkTime, Total Break Time - ', worktime, breaktime);
-    console.log('Current WorkTime, Current Break Time - ', currentWorkTime, currentBreakTime);
-
-    if(currentWorkTime === 0) {
-      alert('Work Time Over')
-    }
-    if(currentBreakTime === 0) {
-      alert('Break Time Over')
-    }
-
-  })
-
   return (
-    <div id="main">
-      <h2>{currentWorkTime}</h2>
-      <h3>Work-Time</h3>
-      <h2>{currentBreakTime}</h2>
-      <h3>Break-Time</h3>
+    <div className="App" style={{textAlign: "center"}}>
+      <div className='clock'>
+      <h1 className='timer'>{(type === 'work') ? convertToStandardFormat(worksecond): convertToStandardFormat(breaksecond) }</h1>
+      <h3>{(type === 'work') ? 'Work' : 'Break'}-Time</h3>
+      </div>
+      <div className='control'>
+      <button data-testid='start-btn' key='start' onClick={() => {setFlag(true); setResetFalg(false)}} disabled={flag} >start</button>
+      <button data-testid='stop-btn' key='stop' onClick={() => {setFlag(false); setResetFalg(false)}} disabled={!flag}>Stop</button>
+      <button data-testid='reset-btn' key='reset' onClick={() => {reset()}} disabled={resetFlag}>Reset</button>
+      </div>
       <br></br>
-      <button data-testid='start-btn' onClick={start}>Start</button>
-      <button data-testid='stop-btn' onClick={stop}>Stop</button>
-      <button data-testid='reset-btn' onClick={reset}>Reset</button>
-      <br></br>
-      <input type="number" data-testid='work-duration' min="0" value={tempWorkTime} onChange={tempupdateWork}/>
-      <input type="number" data-testid='work-duration' min="0" value={tempBreakTime} onChange={tempupdateBreak}/>
-      <button data-testid='set-btn' onClick={updateTime}>Set</button>
-    </div>
-  )
+      <div className='parameters'>
+        <form onSubmit={setDuration}>
+        <input data-testid='work-duration' placeholder='work duration' required type='Number' value={workDuration} disabled={flag} onChange={(e) => setWorkDuration(validateData(e.target.value))}></input>
+        <input data-testid='break-duration' placeholder='break duration' required type='Number' value={breakDuration} disabled={flag} onChange={(e) => setBreakDuration(validateData(e.target.value))}></input>
+        <button data-testid='set-btn' type='submit' disabled={flag}>set</button>
+        </form>
+      </div>
+      </div>
+  );
 }
 
-
-export default App;
+export default Clock;
